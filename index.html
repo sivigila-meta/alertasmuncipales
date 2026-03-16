@@ -356,7 +356,7 @@ button:hover{
     </div>
 
     <div class="leyenda">
-      <div class="leyenda-titulo">Intensidad del rojo por número de alertas activas</div>
+      <div class="leyenda-titulo">Intensidad del color por número de situaciones activas</div>
       <div class="leyenda-item"><span class="cuadro" style="background:var(--nivel-0)"></span><span>Sin alerta</span></div>
       <div class="leyenda-item"><span class="cuadro" style="background:var(--nivel-1)"></span><span>1 alerta</span></div>
       <div class="leyenda-item"><span class="cuadro" style="background:var(--nivel-2)"></span><span>2 alertas</span></div>
@@ -464,7 +464,7 @@ function sanitizeHtml(raw) {
   return template.innerHTML || "—";
 }
 
-function obtenerAlertasPorFeature(feature) {
+function obtenerSituacionesPorFeature(feature) {
   const props = feature.properties || {};
   const cod = String(props.MpCodigo || "");
   const nombre = String(props.MpNombre || "");
@@ -478,17 +478,14 @@ function htmlTooltip(feature) {
   const props = feature.properties || {};
   const nombre = props.MpNombre || "Municipio";
   const codMpio = props.MpCodigo || "";
-  const alertas = obtenerAlertasPorFeature(feature);
+  const alertas = obtenerSituacionesPorFeature(feature);
   if (!alertas.length) {
-    return `<b>${nombre}</b><br>Código DANE: ${fmt(codMpio)}<br><span class="small-muted">Sin alertas activas</span>`;
+    return `<b>${nombre}</b><br>Código DANE: ${fmt(codMpio)}<br><span class="small-muted">Sin situaciones activas</span>`;
   }
-  const items = alertas.map(a => `<li><b>${fmt(a.evento)}</b>: ${fmt(a.personas_afectadas)} personas</li>`).join("");
   return `
     <b>${nombre}</b><br>
     Código DANE: ${fmt(codMpio)}<br>
-    Alertas activas: <b>${alertas.length}</b><br>
-    Brotes: <b>${contarBrotes(alertas)}</b>
-    <ul class="lista-tooltip">${items}</ul>
+    Situaciones de alerta: <b>${alertas.length}</b>
   `;
 }
 
@@ -496,42 +493,48 @@ function renderDetalle(feature) {
   const props = feature.properties || {};
   const nombre = props.MpNombre || "Municipio";
   const codMpio = props.MpCodigo || "";
-  const alertas = obtenerAlertasPorFeature(feature);
+  const alertas = obtenerSituacionesPorFeature(feature);
   const brotes = contarBrotes(alertas);
 
   if (!alertas.length) {
     detalleMunicipio.innerHTML = `
       <h3>${nombre}</h3>
       <div class="resumen">
-        <div class="card"><div class="lbl">Alertas activas</div><div class="val">0</div></div>
-        <div class="card"><div class="lbl">Brotes</div><div class="val">0</div></div>
+        <div class="card"><div class="lbl">Situaciones de alerta</div><div class="val">0</div></div>
+        
         <div class="card"><div class="lbl">Código DANE</div><div class="val" style="font-size:16px">${fmt(codMpio)}</div></div>
         <div class="card"><div class="lbl">Departamento</div><div class="val" style="font-size:16px">${fmt(props.Depto)}</div></div>
       </div>
-      <div class="alerta-vacia">No hay alertas activas registradas para este municipio.</div>`;
+      <div class="alerta-vacia">No hay situaciones activas registradas para este municipio.</div>`;
     return;
   }
 
-  const filas = alertas.map((a,i)=>`
-    <tr>
-      <td>${i+1}</td>
-      <td>${fmt(a.evento)}</td>
-      <td>${fmt(a.personas_afectadas)}</td>
-      <td>${fmt(a.tipo)}</td>
-      <td><div class="descripcion-html">${sanitizeHtml(a.descripcion)}</div></td>
-    </tr>`).join("");
+  
+const filas = alertas.map((a, i) => `
+  <tr>
+    <td>${i + 1}</td>
+    <td>${fmt(a.evento || a.nombre_evento || a.situacion || "Sin dato")}</td>
+    <td>${fmt(a.personas_afectadas ?? a.afectados ?? 0)}</td>
+    <td>${fmt(a.tipo || a.alerta_brote || a.estado || "Sin dato")}</td>
+    <td>
+      <div><b>Tipo:</b> ${fmt(a.tipo || a.alerta_brote || a.estado || "Sin dato")}</div>
+      <div class="descripcion-html">${a.descripcion || a.observaciones || "Sin descripción"}</div>
+    </td>
+  </tr>
+`).join('');
+
 
   detalleMunicipio.innerHTML = `
     <h3>${nombre}</h3>
     <div class="resumen">
-      <div class="card"><div class="lbl">Alertas activas</div><div class="val">${alertas.length}</div></div>
-      <div class="card"><div class="lbl">Brotes</div><div class="val">${brotes}</div></div>
+      <div class="card"><div class="lbl">Situaciones de alerta</div><div class="val">${alertas.length}</div></div>
+      
       <div class="card"><div class="lbl">Código DANE</div><div class="val" style="font-size:16px">${fmt(codMpio)}</div></div>
       <div class="card"><div class="lbl">Departamento</div><div class="val" style="font-size:16px">${fmt(props.Depto)}</div></div>
     </div>
     <div class="tabla-wrap"><table>
       <thead>
-        <tr><th>#</th><th>Evento</th><th>Personas afectadas</th><th>Alerta o brote</th><th>Descripción</th></tr>
+        <tr><th>#</th><th>Evento</th><th>Personas afectadas</th><th>Situación</th><th>Descripción / tipo</th></tr>
       </thead>
       <tbody>${filas}</tbody>
     </table></div>`;
@@ -547,7 +550,7 @@ function mostrarTooltip(ev, html) {
 const ocultarTooltip = () => tooltip.style.display = "none";
 
 function styleMunicipio(feature) {
-  const alertas = obtenerAlertasPorFeature(feature);
+  const alertas = obtenerSituacionesPorFeature(feature);
   return {
     color: "#475569",
     weight: municipioActivo && municipioActivo.feature === feature ? 2.2 : 1,
