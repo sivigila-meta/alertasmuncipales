@@ -331,6 +331,112 @@ button:hover{
 }
 </style>
 
+
+
+<style id="meta-v45-footer-hide-on-scroll">
+/* Footer normal en escritorio */
+.footer{
+  position: relative !important;
+  z-index: 1 !important;
+  transition: transform .22s ease, opacity .22s ease !important;
+}
+
+/* En móvil, footer flotante que se oculta al hacer scroll hacia abajo */
+@media (max-width: 900px){
+  .footer{
+    position: fixed !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    margin: 0 !important;
+    flex-wrap: wrap !important;
+    text-align: center !important;
+    line-height: 1.2 !important;
+    padding: 8px 10px calc(8px + env(safe-area-inset-bottom)) !important;
+    font-size: 11px !important;
+    z-index: 1200 !important;
+    transform: translateY(0);
+    opacity: 1;
+  }
+  .footer.footer-hidden{
+    transform: translateY(110%) !important;
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+
+  /* espacio para que el contenido no quede tapado cuando el footer esté visible */
+  body{
+    padding-bottom: 54px !important;
+  }
+  .panel{
+    padding-bottom: 18px !important;
+  }
+  .ayuda{
+    bottom: 16px !important;
+  }
+}
+</style>
+
+<script id="meta-v45-footer-hide-on-scroll-script">
+(function(){
+  function ready(fn){
+    if(document.readyState === 'loading'){ document.addEventListener('DOMContentLoaded', fn); }
+    else { fn(); }
+  }
+
+  ready(function(){
+    const footer = document.querySelector('.footer');
+    if(!footer) return;
+
+    function isMobile(){
+      return window.matchMedia('(max-width: 900px)').matches;
+    }
+
+    let lastY = window.scrollY;
+    let ticking = false;
+
+    function updateFooter(){
+      ticking = false;
+      if(!isMobile()){
+        footer.classList.remove('footer-hidden');
+        return;
+      }
+
+      const y = window.scrollY;
+      const diff = y - lastY;
+
+      // arriba o cerca de la parte superior: mostrar
+      if(y < 20){
+        footer.classList.remove('footer-hidden');
+      } else if(diff > 6){
+        // bajando
+        footer.classList.add('footer-hidden');
+      } else if(diff < -6){
+        // subiendo
+        footer.classList.remove('footer-hidden');
+      }
+
+      lastY = y;
+    }
+
+    function onScroll(){
+      if(!ticking){
+        window.requestAnimationFrame(updateFooter);
+        ticking = true;
+      }
+    }
+
+    window.addEventListener('scroll', onScroll, {passive:true});
+    window.addEventListener('resize', function(){
+      if(!isMobile()) footer.classList.remove('footer-hidden');
+    });
+
+    updateFooter();
+  });
+})();
+</script>
+
 </head>
 <body>
 <header class="header">
